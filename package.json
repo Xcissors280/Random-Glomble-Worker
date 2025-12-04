@@ -1,0 +1,12 @@
+{
+  "name": "glomble-scraper",
+  "version": "1.0.0",
+  "description": "Scrape all video IDs from glomble.com and output to CSV",
+  "type": "module",
+  "scripts": {
+    "start": "bun run scraper.js"
+  },
+  "keywords": ["scraper", "glomble", "csv"],
+  "author": "",
+  "license": "MIT"
+}

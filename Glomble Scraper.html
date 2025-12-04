@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Random Glomble Video</title>
+
+    <style>
+
+        html {
+
+            overflow: hidden;
+
+        }
+
+ 
+
+        body {
+
+            margin: 0;
+
+            padding: 0;
+
+            font-family: Arial, sans-serif;
+
+            background: #000000;
+
+            color: #ffffff;
+
+            height: 100vh;
+
+            overflow: hidden;
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+ 
+
+        body.white-mode {
+
+            background: #ffffff;
+
+            color: #000000;
+
+        }
+
+ 
+
+        #container {
+
+            flex: 1;
+
+            display: flex;
+
+            flex-direction: column;
+
+            width: 100%;
+
+            padding: 8px;
+
+            box-sizing: border-box;
+
+            min-height: 0;
+
+        }
+
+ 
+
+        h1 {
+
+            margin: 0 0 8px 0;
+
+            font-size: 20px;
+
+            flex-shrink: 0;
+
+            text-align: center;
+
+        }
+
+ 
+
+        #video-container {
+
+            position: relative;
+
+            width: 100%;
+
+            background: #000000;
+
+            overflow: hidden;
+
+            flex: 1;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            min-height: 0;
+
+        }
+
+ 
+
+        #video-player {
+
+            max-width: 100%;
+
+            max-height: 100%;
+
+            width: 100%;
+
+            height: 100%;
+
+            object-fit: contain;
+
+            display: block;
+
+            background: #000000;
+
+        }
+
+
+
+        #controls {
+
+            margin-top: 12px;
+
+            flex-shrink: 0;
+
+            text-align: center;
+
+        }
+
+ 
+
+        button {
+
+            background: transparent;
+
+            color: #ffffff;
+
+            border: 2px solid #ffffff;
+
+            padding: 10px 20px;
+
+            font-size: 14px;
+
+            cursor: pointer;
+
+        }
+
+ 
+
+        body.white-mode button {
+
+            color: #000000;
+
+            border-color: #000000;
+
+        }
+
+ 
+
+        button:hover {
+
+            background: rgba(255, 255, 255, 0.1);
+
+        }
+
+ 
+
+        body.white-mode button:hover {
+
+            background: rgba(0, 0, 0, 0.1);
+
+        }
+
+ 
+
+        button:disabled {
+
+            opacity: 0.5;
+
+            cursor: not-allowed;
+
+        }
+
+ 
+
+        #current-url {
+
+            margin-top: 8px;
+
+            font-size: 11px;
+
+            word-break: break-all;
+
+            flex-shrink: 0;
+
+            text-align: center;
+
+        }
+
+ 
+
+        #current-url a {
+
+            color: #ffffff;
+
+            text-decoration: none;
+
+        }
+
+ 
+
+        body.white-mode #current-url a {
+
+            color: #000000;
+
+        }
+
+ 
+
+        #current-url a:hover {
+
+            text-decoration: underline;
+
+        }
+
+ 
+
+        #error-message {
+
+            margin-top: 8px;
+
+            font-size: 11px;
+
+            color: #ff6666;
+
+            flex-shrink: 0;
+
+            text-align: center;
+
+        }
+
+ 
+
+        body.white-mode #error-message {
+
+            color: #cc0000;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div id="container">
+
+        <h1>Random Glomble Video</h1>
+
+        <div id="video-container">
+
+            <video id="video-player" controls preload="auto">
+
+                Your browser does not support the video tag.
+
+            </video>
+
+        </div>
+
+        <div id="controls">
+
+            <button id="new-video-btn" onclick="loadRandomVideo(true)">Random Video</button>
+
+        </div>
+
+        <div id="current-url"></div>
+
+        <div id="error-message"></div>
+
+    </div>
+
+ 
+
+    <script>
+
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+
+        let cachedMaxPage = 142; // Start with fallback
+
+        let videoPool = [];
+
+        let isLoadingPool = false;
+
+        let nextVideoPreloaded = null; // Store preloaded next video info
+
+ 
+
+        // Randomly decide white mode on page load (1 in 1000)
+
+        if (Math.random() < 0.001) {
+
+            document.body.classList.add('white-mode');
+
+        }
+
+ 
+
+        async function fetchMaxPage() {
+
+            try {
+
+                const response = await fetch(proxyUrl + encodeURIComponent('https://glomble.com/'), {
+
+                    signal: AbortSignal.timeout(5000)
+
+                });
+
+                const html = await response.text();
+
+ 
+
+                // Look for pagination links to find the highest page number
+
+                const pageMatches = [...html.matchAll(/\?page=(\d+)/g)];
+
+                if (pageMatches.length > 0) {
+
+                    const pageNumbers = pageMatches.map(m => parseInt(m[1]));
+
+                    const max = Math.max(...pageNumbers);
+
+                    cachedMaxPage = max;
+
+                    return max;
+
+                }
+
+                return cachedMaxPage;
+
+            } catch (error) {
+
+                console.error('Error fetching page count:', error);
+
+                return cachedMaxPage;
+
+            }
+
+        }
+
+ 
+
+        async function loadVideoPool() {
+
+            if (isLoadingPool) return;
+
+            isLoadingPool = true;
+
+ 
+
+            try {
+
+                // Update max page in background
+
+                fetchMaxPage();
+
+ 
+
+                // Fetch 5 random pages in parallel (optimized for faster loading)
+
+                const promises = [];
+
+                for (let i = 0; i < 5; i++) {
+
+                    const randomPage = Math.floor(Math.random() * cachedMaxPage) + 1;
+
+                    const url = randomPage === 1 ? 'https://glomble.com/' : `https://glomble.com/?page=${randomPage}`;
+
+ 
+
+                    promises.push(
+
+                        fetch(proxyUrl + encodeURIComponent(url), {
+
+                            signal: AbortSignal.timeout(8000)
+
+                        })
+
+                        .then(response => response.text())
+
+                        .then(html => {
+
+                            const regex = /\/videos\/([a-zA-Z0-9_-]+)/g;
+
+                            const matches = [...html.matchAll(regex)];
+
+                            return matches.map(m => m[1]);
+
+                        })
+
+                        .catch(error => {
+
+                            console.error(`Error fetching page:`, error);
+
+                            return [];
+
+                        })
+
+                    );
+
+                }
+
+ 
+
+                const results = await Promise.all(promises);
+
+                const allIds = results.flat();
+
+ 
+
+                // Shuffle the results
+
+                const shuffled = allIds.sort(() => Math.random() - 0.5);
+
+ 
+
+                // Add to pool
+
+                videoPool.push(...shuffled);
+
+ 
+
+                // Remove duplicates
+
+                videoPool = [...new Set(videoPool)];
+
+            } finally {
+
+                isLoadingPool = false;
+
+            }
+
+        }
+
+ 
+
+        async function getRandomVideoId() {
+
+            // If pool is low, start loading more
+
+            if (videoPool.length < 10) {
+
+                loadVideoPool();
+
+            }
+
+ 
+
+            // If we have videos in pool, use them
+
+            if (videoPool.length > 0) {
+
+                const randomIndex = Math.floor(Math.random() * videoPool.length);
+
+                const videoId = videoPool[randomIndex];
+
+                videoPool.splice(randomIndex, 1);
+
+                return videoId;
+
+            }
+
+ 
+
+            // Otherwise wait for pool to load
+
+            while (isLoadingPool || videoPool.length === 0) {
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+            }
+
+ 
+
+            if (videoPool.length > 0) {
+
+                const randomIndex = Math.floor(Math.random() * videoPool.length);
+
+                const videoId = videoPool[randomIndex];
+
+                videoPool.splice(randomIndex, 1);
+
+                return videoId;
+
+            }
+
+ 
+
+            return null;
+
+        }
+
+ 
+
+        async function preloadNextVideo() {
+
+            const videoId = await getRandomVideoId();
+
+            if (videoId) {
+
+                const mp4Url = `https://media.glomble.com/uploads/video_files/${videoId}.mp4`;
+
+                const videoPageUrl = `https://glomble.com/videos/${videoId}`;
+
+
+
+                // Create a preload link element
+
+                const link = document.createElement('link');
+
+                link.rel = 'preload';
+
+                link.as = 'video';
+
+                link.href = mp4Url;
+
+                document.head.appendChild(link);
+
+
+
+                nextVideoPreloaded = { mp4Url, videoPageUrl, linkElement: link };
+
+            }
+
+        }
+
+
+
+        async function loadRandomVideo(usePreloaded = false) {
+
+            const button = document.getElementById('new-video-btn');
+
+            const currentUrl = document.getElementById('current-url');
+
+            const errorMessage = document.getElementById('error-message');
+
+            const videoPlayer = document.getElementById('video-player');
+
+
+
+            button.disabled = true;
+
+            errorMessage.textContent = '';
+
+
+
+            // Maybe toggle white mode (1 in 1000)
+
+            if (Math.random() < 0.001) {
+
+                document.body.classList.add('white-mode');
+
+            } else {
+
+                document.body.classList.remove('white-mode');
+
+            }
+
+
+
+            let mp4Url, videoPageUrl;
+
+
+
+            // Use preloaded video if available
+
+            if (usePreloaded && nextVideoPreloaded) {
+
+                mp4Url = nextVideoPreloaded.mp4Url;
+
+                videoPageUrl = nextVideoPreloaded.videoPageUrl;
+
+
+
+                // Clean up the preload link
+
+                if (nextVideoPreloaded.linkElement) {
+
+                    nextVideoPreloaded.linkElement.remove();
+
+                }
+
+                nextVideoPreloaded = null;
+
+            } else {
+
+                const videoId = await getRandomVideoId();
+
+
+
+                if (!videoId) {
+
+                    errorMessage.textContent = 'Failed to load video. Trying another...';
+
+                    setTimeout(() => loadRandomVideo(), 1000);
+
+                    button.disabled = false;
+
+                    return;
+
+                }
+
+
+
+                mp4Url = `https://media.glomble.com/uploads/video_files/${videoId}.mp4`;
+
+                videoPageUrl = `https://glomble.com/videos/${videoId}`;
+
+            }
+
+
+
+            try {
+
+                // Load video
+
+                videoPlayer.src = mp4Url;
+
+                videoPlayer.muted = false;
+
+                videoPlayer.load();
+
+
+
+                // Attempt to autoplay
+
+                videoPlayer.onloadeddata = function() {
+
+                    videoPlayer.play().catch(e => {
+
+                        console.log('Autoplay prevented:', e);
+
+                    });
+
+                };
+
+
+
+                // Handle video errors
+
+                videoPlayer.onerror = function() {
+
+                    errorMessage.textContent = 'Video failed to load. Trying another...';
+
+                    setTimeout(() => loadRandomVideo(), 1000);
+
+                };
+
+
+
+                currentUrl.innerHTML = `<a href="${videoPageUrl}" target="_blank">${videoPageUrl}</a>`;
+
+
+
+                // Start preloading the next video once this one starts playing
+
+                videoPlayer.onplaying = function() {
+
+                    if (!nextVideoPreloaded) {
+
+                        preloadNextVideo();
+
+                    }
+
+                };
+
+            } catch (error) {
+
+                console.error('Error loading video:', error);
+
+                errorMessage.textContent = 'Error loading video. Trying another...';
+
+                setTimeout(() => loadRandomVideo(), 1000);
+
+            }
+
+
+
+            button.disabled = false;
+
+        }
+
+ 
+
+        // Auto-play next random video when current one ends
+
+        document.getElementById('video-player').addEventListener('ended', function() {
+
+            console.log('Video ended, loading next random video...');
+
+            loadRandomVideo(true); // Pass true to indicate auto-advance
+
+        });
+
+
+
+        // Start loading pool and first video immediately in parallel
+
+        loadVideoPool();
+
+
+
+        // Load first video from a single random page immediately (don't wait for full pool)
+
+        (async function() {
+
+            const randomPage = Math.floor(Math.random() * cachedMaxPage) + 1;
+
+            const url = randomPage === 1 ? 'https://glomble.com/' : `https://glomble.com/?page=${randomPage}`;
+
+
+
+            try {
+
+                const response = await fetch(proxyUrl + encodeURIComponent(url), {
+
+                    signal: AbortSignal.timeout(8000)
+
+                });
+
+                const html = await response.text();
+
+                const regex = /\/videos\/([a-zA-Z0-9_-]+)/g;
+
+                const matches = [...html.matchAll(regex)];
+
+
+
+                if (matches.length > 0) {
+
+                    const randomMatch = matches[Math.floor(Math.random() * matches.length)];
+
+                    const videoId = randomMatch[1];
+
+                    const mp4Url = `https://media.glomble.com/uploads/video_files/${videoId}.mp4`;
+
+                    const videoPageUrl = `https://glomble.com/videos/${videoId}`;
+
+
+
+                    const videoPlayer = document.getElementById('video-player');
+
+                    videoPlayer.src = mp4Url;
+
+                    videoPlayer.muted = false;
+
+                    videoPlayer.onloadeddata = function() {
+
+                        videoPlayer.play().catch(e => console.log('Autoplay prevented:', e));
+
+                    };
+
+
+
+                    document.getElementById('current-url').innerHTML = `<a href="${videoPageUrl}" target="_blank">${videoPageUrl}</a>`;
+
+                }
+
+            } catch (error) {
+
+                console.error('Error loading first video:', error);
+
+                // If first video fails, wait for pool
+
+                loadVideoPool().then(() => loadRandomVideo());
+
+            }
+
+        })();
+
+    </script>
+
+</body>
+
+</html>
+
+ 
