@@ -284,9 +284,9 @@ function getHTML() {
     }
 
     .video-title {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: bold;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
       color: #fff;
       background: #000;
@@ -301,9 +301,9 @@ function getHTML() {
       border: 2px solid #fff;
       border-top: none;
       overflow: hidden;
-      margin: 0 10px 8px 10px;
-      flex: 1;
-      min-height: 0;
+      margin: 0 10px;
+      height: 55vh;
+      flex-shrink: 0;
     }
 
     video {
@@ -318,33 +318,33 @@ function getHTML() {
       display: flex;
       justify-content: space-evenly;
       align-items: center;
-      padding: 0 10px 10px 10px;
+      padding: 8px 10px;
       background: transparent;
       margin: 0;
       flex-shrink: 0;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       width: 100%;
     }
 
     .metadata-item {
       background: #000;
-      padding: 6px 12px;
+      padding: 4px 8px;
       text-align: center;
       border: 2px solid #fff;
       flex: 1 1 auto;
-      min-width: 80px;
+      min-width: 70px;
     }
 
     .metadata-label {
-      font-size: 10px;
+      font-size: 9px;
       color: #fff;
       text-transform: uppercase;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
 
     .metadata-value {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
       color: #fff;
     }
@@ -352,13 +352,13 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 0 10px 8px 10px;
-      padding: 8px;
+      margin: 0 10px 6px 10px;
+      padding: 6px;
       background: #000;
       border: 2px solid #fff;
       text-decoration: none;
       color: #fff;
-      font-size: 11px;
+      font-size: 10px;
       font-family: monospace;
       word-break: break-all;
       flex-shrink: 0;
@@ -372,9 +372,9 @@ function getHTML() {
     .next-button {
       display: block;
       width: calc(100% - 20px);
-      margin: 0 10px 8px 10px;
-      padding: 10px;
-      font-size: 16px;
+      margin: 0 10px 6px 10px;
+      padding: 8px;
+      font-size: 15px;
       font-weight: bold;
       background: #000;
       color: #fff;
