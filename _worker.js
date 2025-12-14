@@ -286,7 +286,7 @@ function getHTML() {
     .video-title {
       font-size: 20px;
       font-weight: bold;
-      padding: 8px;
+      padding: 8px 10px;
       text-align: center;
       color: #fff;
       background: #000;
@@ -302,8 +302,8 @@ function getHTML() {
       border-top: none;
       overflow: hidden;
       margin: 0 10px;
-      height: 55vh;
-      flex-shrink: 0;
+      flex: 1;
+      min-height: 0;
     }
 
     video {
@@ -352,7 +352,7 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 0 10px 2px 10px;
+      margin: 0 10px;
       padding: 6px;
       background: #000;
       border: 2px solid #fff;
@@ -372,7 +372,7 @@ function getHTML() {
     .next-button {
       display: block;
       width: calc(100% - 20px);
-      margin: 0 10px 2px 10px;
+      margin: 0 10px;
       padding: 8px;
       font-size: 15px;
       font-weight: bold;
