@@ -84,16 +84,21 @@ function extractVideoData(html, videoId) {
     dislikes: 0,
     comments: 0,
     uploadDate: '',
-    videoUrl: `https://media.glomble.com/uploads/videos/${videoId}.mp4`,
+    videoUrl: `https://media.glomble.com/uploads/video_files/${videoId}.mp4`,
     thumbnailUrl: `https://media.glomble.com/uploads/thumbnails/${videoId}.png`,
     bannerUrl: '',
     pageUrl: `https://glomble.com/videos/${videoId}`
   }
 
-  // Extract title
-  const titleMatch = html.match(/<title>([^<]+)<\/title>/)
+  // Extract title - try multiple methods
+  let titleMatch = html.match(/<title>([^<]+)<\/title>/)
   if (titleMatch) {
-    data.title = titleMatch[1].replace(' - Glomble', '').trim()
+    data.title = titleMatch[1].replace(' - Glomble', '').replace('Glomble - ', '').trim()
+  }
+  // Also try to extract from h1 or video title meta
+  if (!data.title) {
+    const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
+    if (h1Match) data.title = h1Match[1].trim()
   }
 
   // Extract views
@@ -123,11 +128,46 @@ function extractVideoData(html, videoId) {
     data.comments = parseInt(commentsMatch[1])
   }
 
-  // Extract upload date
-  const dateMatch = html.match(/(\d+\s+(?:second|minute|hour|day|week|month|year)s?,\s*\d+\s+(?:second|minute|hour|day|week|month|year)s?\s+ago)/i) ||
-                    html.match(/(\d+\s+(?:second|minute|hour|day|week|month|year)s?\s+ago)/i)
+  // Extract upload date and convert to actual date
+  const dateMatch = html.match(/(\d+)\s+(second|minute|hour|day|week|month|year)s?(?:,\s*(\d+)\s+(second|minute|hour|day|week|month|year)s?)?\s+ago/i)
   if (dateMatch) {
-    data.uploadDate = dateMatch[1]
+    const value1 = parseInt(dateMatch[1])
+    const unit1 = dateMatch[2].toLowerCase()
+    const value2 = dateMatch[3] ? parseInt(dateMatch[3]) : 0
+    const unit2 = dateMatch[4] ? dateMatch[4].toLowerCase() : ''
+
+    const now = new Date()
+    let uploadDate = new Date(now)
+
+    // Subtract time units
+    const subtractTime = (val, unit) => {
+      switch(unit) {
+        case 'second': return val * 1000
+        case 'minute': return val * 60 * 1000
+        case 'hour': return val * 60 * 60 * 1000
+        case 'day': return val * 24 * 60 * 60 * 1000
+        case 'week': return val * 7 * 24 * 60 * 60 * 1000
+        case 'month': return val * 30 * 24 * 60 * 60 * 1000
+        case 'year': return val * 365 * 24 * 60 * 60 * 1000
+        default: return 0
+      }
+    }
+
+    uploadDate = new Date(now.getTime() - subtractTime(value1, unit1) - subtractTime(value2, unit2))
+
+    // Check if it's today
+    const isToday = uploadDate.toDateString() === now.toDateString()
+
+    if (isToday) {
+      const hours = uploadDate.getHours().toString().padStart(2, '0')
+      const minutes = uploadDate.getMinutes().toString().padStart(2, '0')
+      data.uploadDate = `${hours}:${minutes}`
+    } else {
+      const month = (uploadDate.getMonth() + 1).toString().padStart(2, '0')
+      const day = uploadDate.getDate().toString().padStart(2, '0')
+      const year = uploadDate.getFullYear()
+      data.uploadDate = `${month}/${day}/${year}`
+    }
   }
 
   // Extract banner URL
@@ -155,7 +195,7 @@ function getHTML() {
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0a0a0a;
+      background: #000;
       color: #fff;
       min-height: 100vh;
       position: relative;
@@ -170,7 +210,6 @@ function getHTML() {
       height: 100%;
       background-size: cover;
       background-position: center;
-      filter: blur(20px) brightness(0.3);
       z-index: -1;
       transition: background-image 0.5s ease;
     }
@@ -206,15 +245,14 @@ function getHTML() {
       font-size: 32px;
       font-weight: bold;
       margin-bottom: 20px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
       text-align: center;
+      color: #fff;
     }
 
     .video-container {
-      background: rgba(0,0,0,0.7);
-      border-radius: 12px;
+      background: #000;
+      border: 2px solid #fff;
       overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
       margin-bottom: 20px;
     }
 
@@ -230,22 +268,21 @@ function getHTML() {
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 15px;
       padding: 20px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 8px;
+      background: #000;
+      border: 2px solid #fff;
       margin-bottom: 20px;
     }
 
     .metadata-item {
-      background: rgba(255,255,255,0.05);
+      background: #000;
       padding: 15px;
-      border-radius: 6px;
       text-align: center;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 2px solid #fff;
     }
 
     .metadata-label {
       font-size: 12px;
-      color: #888;
+      color: #fff;
       text-transform: uppercase;
       margin-bottom: 5px;
     }
@@ -261,16 +298,18 @@ function getHTML() {
       text-align: center;
       margin-bottom: 20px;
       padding: 15px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
+      background: #000;
+      border: 2px solid #fff;
       text-decoration: none;
-      color: #4da6ff;
-      font-size: 16px;
-      transition: background 0.3s;
+      color: #fff;
+      font-size: 14px;
+      font-family: monospace;
+      word-break: break-all;
     }
 
     .video-link:hover {
-      background: rgba(255,255,255,0.1);
+      background: #fff;
+      color: #000;
     }
 
     .next-button {
@@ -281,31 +320,28 @@ function getHTML() {
       padding: 20px;
       font-size: 20px;
       font-weight: bold;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 50px;
+      background: #000;
+      color: #fff;
+      border: 2px solid #fff;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
     }
 
     .next-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+      background: #fff;
+      color: #000;
     }
 
     .next-button:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .error {
-      background: rgba(255,0,0,0.2);
-      border: 1px solid #ff0000;
+      background: #000;
+      border: 2px solid #fff;
       padding: 20px;
-      border-radius: 8px;
       text-align: center;
       margin: 20px 0;
+      color: #fff;
     }
   </style>
 </head>
@@ -397,12 +433,12 @@ function getHTML() {
           </div>
         </div>
 
-        <a href="\${data.pageUrl}" target="_blank" class="video-link">
-          🔗 Watch on Glomble.com
+        <a href="\${data.videoUrl}" target="_blank" class="video-link">
+          \${data.videoUrl}
         </a>
 
         <button class="next-button" onclick="loadRandomVideo()">
-          🎲 Get Another Random Video
+          Get Another Random Video
         </button>
       \`;
 
