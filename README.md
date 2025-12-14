@@ -26,49 +26,56 @@ A Cloudflare Worker that scrapes and plays random videos from [Glomble.com](http
 5. Displays everything in a beautiful, responsive interface
 6. Auto-plays the next random video when current one finishes
 
-## Setup
+## Deployment
 
-### Prerequisites
+### Option 1: Cloudflare Pages (Recommended - Easiest!)
 
+1. Push this repository to GitHub
+2. Go to [Cloudflare Pages](https://pages.cloudflare.com/)
+3. Click "Create a project" and connect your GitHub repository
+4. Configure build settings:
+   - **Build command**: Leave empty or use `echo "No build needed"`
+   - **Build output directory**: `/`
+5. Click "Save and Deploy"
+
+That's it! Your worker will be live at `https://your-project.pages.dev`
+
+The `_worker.js` file is automatically detected and deployed by Cloudflare Pages.
+
+### Option 2: Cloudflare Workers (via Wrangler CLI)
+
+**Prerequisites:**
 - [Node.js](https://nodejs.org/) (v16 or later)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
-- Cloudflare account (free tier works!)
 
-### Installation
+**Steps:**
 
-1. Clone this repository
-2. Install dependencies:
+1. Install Wrangler globally:
    ```bash
-   npm install
+   npm install -g wrangler
    ```
 
-3. Update `wrangler.toml` with your Cloudflare account details:
-   ```toml
-   account_id = "your-account-id"
+2. Login to Cloudflare:
+   ```bash
+   wrangler login
    ```
 
-### Development
+3. Deploy the worker:
+   ```bash
+   wrangler deploy
+   ```
 
-Run locally with hot-reload:
+Your worker will be available at `https://random-glomble-worker.your-subdomain.workers.dev`
+
+### Local Development
+
+If you have Wrangler installed, you can test locally:
 
 ```bash
-npm run dev
+wrangler dev
 ```
 
 Visit `http://localhost:8787` to see it in action!
-
-### Deployment
-
-Deploy to Cloudflare Workers:
-
-```bash
-npm run deploy
-```
-
-After deployment, your worker will be available at:
-```
-https://random-glomble-worker.your-subdomain.workers.dev
-```
 
 ## API Endpoints
 
