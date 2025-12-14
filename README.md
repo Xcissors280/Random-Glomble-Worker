@@ -36,7 +36,7 @@ A Cloudflare Worker that scrapes and plays random videos from [Glomble.com](http
 
 ### Installation
 
-1. Clone this repository
+1. Clone this repository 
 2. Install dependencies:
    ```bash
    npm install
