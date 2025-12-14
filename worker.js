@@ -301,7 +301,7 @@ function getHTML() {
       border: 2px solid #fff;
       border-top: none;
       overflow: hidden;
-      margin: 0 10px 10px 10px;
+      margin: 0 10px 8px 10px;
       flex: 1;
       min-height: 0;
     }
@@ -318,12 +318,12 @@ function getHTML() {
       display: flex;
       justify-content: space-evenly;
       align-items: center;
-      padding: 10px;
+      padding: 0 10px 10px 10px;
       background: transparent;
       margin: 0;
       flex-shrink: 0;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       width: 100%;
     }
 
@@ -352,8 +352,8 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 0 10px 10px 10px;
-      padding: 10px;
+      margin: 0 10px 8px 10px;
+      padding: 8px;
       background: #000;
       border: 2px solid #fff;
       text-decoration: none;
@@ -372,8 +372,8 @@ function getHTML() {
     .next-button {
       display: block;
       width: calc(100% - 20px);
-      margin: 0 10px 10px 10px;
-      padding: 12px;
+      margin: 0 10px 8px 10px;
+      padding: 10px;
       font-size: 16px;
       font-weight: bold;
       background: #000;
