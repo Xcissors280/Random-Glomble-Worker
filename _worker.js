@@ -131,37 +131,40 @@ function extractVideoData(html, videoId) {
     data.title = `Video ${videoId}`
   }
 
-  // Extract views - try multiple patterns
-  let viewsMatch = html.match(/<strong>Views:\s*<\/strong>\s*(\d+)/i)
+  // Extract views - look for view-count span
+  let viewsMatch = html.match(/<span class="view-count"[^>]*>(\d+)<\/span>/i)
+  if (!viewsMatch) viewsMatch = html.match(/Views:\s*<span[^>]*>(\d+)<\/span>/i)
   if (!viewsMatch) viewsMatch = html.match(/Views:\s*(\d+)/i)
-  if (!viewsMatch) viewsMatch = html.match(/>(\d+)\s*views?</i)
   if (viewsMatch) {
     data.views = parseInt(viewsMatch[1])
   }
 
-  // Extract score - try multiple patterns
-  let scoreMatch = html.match(/<strong>Score:\s*<\/strong>\s*([\d.]+)/i)
+  // Extract score - look for score span
+  let scoreMatch = html.match(/<span id="score">([^<]+)<\/span>/i)
+  if (!scoreMatch) scoreMatch = html.match(/Score:\s*<span[^>]*>([\d.]+)<\/span>/i)
   if (!scoreMatch) scoreMatch = html.match(/Score:\s*([\d.]+)/i)
-  if (!scoreMatch) scoreMatch = html.match(/"score"[^>]*>([\d.]+)/i)
   if (scoreMatch) {
     data.score = parseFloat(scoreMatch[1])
   }
 
-  // Extract likes and dislikes - try multiple patterns
-  let likesMatch = html.match(/(\d+)\s*likes?/i)
-  if (!likesMatch) likesMatch = html.match(/"cool"[^>]*>(\d+)/i)
+  // Extract likes - look for bx-like with span (confusingly named dislike-count)
+  let likesMatch = html.match(/bx-like[^>]*><span class="dislike-count">(\d+)<\/span>/i)
+  if (!likesMatch) likesMatch = html.match(/bx-like[^>]*><span>(\d+)<\/span>/i)
+  if (!likesMatch) likesMatch = html.match(/(\d+)\s*likes?/i)
   if (likesMatch) data.likes = parseInt(likesMatch[1])
 
-  let dislikesMatch = html.match(/(\d+)\s*dislikes?/i)
-  if (!dislikesMatch) dislikesMatch = html.match(/"notcool"[^>]*>(\d+)/i)
+  // Extract dislikes - look for bx-dislike with span
+  let dislikesMatch = html.match(/bx-dislike[^>]*><span>(\d+)<\/span>/i)
+  if (!dislikesMatch) dislikesMatch = html.match(/(\d+)\s*dislikes?/i)
   if (dislikesMatch) data.dislikes = parseInt(dislikesMatch[1])
 
-  // Extract comments count - try multiple patterns
-  let commentsMatch = html.match(/<strong>Comments:\s*<\/strong>\s*(\d+)/i)
-  if (!commentsMatch) commentsMatch = html.match(/(\d+)\s*comments?/i)
-  if (!commentsMatch) commentsMatch = html.match(/comments[^>]*>(\d+)/i)
+  // Extract comments count - count comment sections or look for comment text
+  let commentsMatch = html.match(/class="comment-section"/g)
   if (commentsMatch) {
-    data.comments = parseInt(commentsMatch[1])
+    data.comments = commentsMatch.length
+  } else {
+    commentsMatch = html.match(/(\d+)\s*comments?/i)
+    if (commentsMatch) data.comments = parseInt(commentsMatch[1])
   }
 
   // Extract upload date and convert to actual date
@@ -247,13 +250,12 @@ function getHTML() {
       background-size: cover;
       background-position: center;
       z-index: -1;
-      transition: background-image 0.5s ease;
     }
 
     .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 10px;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -289,15 +291,17 @@ function getHTML() {
       color: #fff;
       background: #000;
       border: 2px solid #fff;
-      margin-bottom: 10px;
+      border-top: none;
+      margin: 0;
       flex-shrink: 0;
     }
 
     .video-container {
       background: #000;
       border: 2px solid #fff;
+      border-top: none;
       overflow: hidden;
-      margin-bottom: 10px;
+      margin: 0;
       flex-shrink: 0;
       height: 50vh;
     }
@@ -313,19 +317,20 @@ function getHTML() {
     .metadata {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 5px;
-      padding: 5px;
+      gap: 2px;
+      padding: 2px;
       background: #000;
       border: 2px solid #fff;
-      margin-bottom: 5px;
+      border-top: none;
+      margin: 0;
       flex-shrink: 0;
     }
 
     .metadata-item {
       background: #000;
-      padding: 5px;
+      padding: 3px;
       text-align: center;
-      border: 2px solid #fff;
+      border: 1px solid #fff;
     }
 
     .metadata-label {
@@ -344,13 +349,14 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin-bottom: 5px;
-      padding: 8px;
+      margin: 0;
+      padding: 6px;
       background: #000;
       border: 2px solid #fff;
+      border-top: none;
       text-decoration: none;
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
       font-family: monospace;
       word-break: break-all;
       flex-shrink: 0;
@@ -364,12 +370,14 @@ function getHTML() {
     .next-button {
       display: block;
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       font-size: 16px;
       font-weight: bold;
       background: #000;
       color: #fff;
       border: 2px solid #fff;
+      border-top: none;
+      border-bottom: none;
       cursor: pointer;
       flex-shrink: 0;
     }
@@ -493,9 +501,7 @@ function getHTML() {
       // Set up auto-play next video when current ends
       currentVideoElement = document.getElementById('videoPlayer');
       currentVideoElement.addEventListener('ended', () => {
-        setTimeout(() => {
-          loadRandomVideo();
-        }, 1000); // Wait 1 second before loading next video
+        loadRandomVideo(); // Load immediately
       });
     }
 
