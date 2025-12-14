@@ -352,13 +352,13 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 0 10px 6px 10px;
+      margin: 0 10px 2px 10px;
       padding: 6px;
       background: #000;
       border: 2px solid #fff;
       text-decoration: none;
       color: #fff;
-      font-size: 10px;
+      font-size: 14px;
       font-family: monospace;
       word-break: break-all;
       flex-shrink: 0;
@@ -372,7 +372,7 @@ function getHTML() {
     .next-button {
       display: block;
       width: calc(100% - 20px);
-      margin: 0 10px 6px 10px;
+      margin: 0 10px 2px 10px;
       padding: 8px;
       font-size: 15px;
       font-weight: bold;
@@ -484,7 +484,7 @@ function getHTML() {
           </div>
           <div class="metadata-item">
             <div class="metadata-label">Uploaded</div>
-            <div class="metadata-value" style="font-size: 12px;">\${data.uploadDate || 'Unknown'}</div>
+            <div class="metadata-value">\${data.uploadDate || 'Unknown'}</div>
           </div>
         </div>
 
