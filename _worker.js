@@ -65,9 +65,18 @@ function extractVideoIds(html) {
   const regex = /\/videos\/([a-zA-Z0-9_-]+)/g
   let match
 
+  // Common non-video IDs to filter out
+  const blacklist = ['favico', 'favicon', 'home', 'main', 'styles', 'style', 'script', 'scripts', 'index', 'about', 'contact', 'login', 'register', 'search', 'upload', 'settings', 'profile', 'profiles']
+
   while ((match = regex.exec(html)) !== null) {
-    if (!videoIds.includes(match[1])) {
-      videoIds.push(match[1])
+    const id = match[1]
+    // Only add if not in blacklist and has proper video ID format (12 characters, mixed case)
+    if (!videoIds.includes(id) &&
+        !blacklist.includes(id.toLowerCase()) &&
+        id.length >= 10 &&
+        /[A-Z]/.test(id) &&
+        /[a-z]/.test(id)) {
+      videoIds.push(id)
     }
   }
 
@@ -93,42 +102,64 @@ function extractVideoData(html, videoId) {
   // Extract title - try multiple methods
   let titleMatch = html.match(/<title>([^<]+)<\/title>/)
   if (titleMatch) {
-    data.title = titleMatch[1].replace(' - Glomble', '').replace('Glomble - ', '').trim()
+    const title = titleMatch[1].replace(' - Glomble', '').replace('Glomble - ', '').trim()
+    if (title && title !== 'Glomble') {
+      data.title = title
+    }
   }
-  // Try h5 tag (where Glomble actually puts the title)
+  // Try h5 tag (where Glomble actually puts the title) - try multiple times
   if (!data.title) {
-    const h5Match = html.match(/<h5[^>]*>([^<]+)<\/h5>/i)
-    if (h5Match) data.title = h5Match[1].trim()
+    const h5Matches = html.match(/<h5[^>]*>([^<]+)<\/h5>/gi)
+    if (h5Matches && h5Matches.length > 0) {
+      // Get the first h5 match and extract text
+      const h5Match = h5Matches[0].match(/<h5[^>]*>([^<]+)<\/h5>/i)
+      if (h5Match) data.title = h5Match[1].trim()
+    }
   }
-  // Also try h1 as fallback
+  // Try h1 as fallback
   if (!data.title) {
     const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
     if (h1Match) data.title = h1Match[1].trim()
   }
+  // Try h2 as last resort
+  if (!data.title) {
+    const h2Match = html.match(/<h2[^>]*>([^<]+)<\/h2>/i)
+    if (h2Match) data.title = h2Match[1].trim()
+  }
+  // If still no title, use video ID
+  if (!data.title) {
+    data.title = `Video ${videoId}`
+  }
 
-  // Extract views
-  const viewsMatch = html.match(/Views:\s*<\/strong>\s*(\d+)/i) ||
-                     html.match(/(\d+)\s*views?/i)
+  // Extract views - try multiple patterns
+  let viewsMatch = html.match(/<strong>Views:\s*<\/strong>\s*(\d+)/i)
+  if (!viewsMatch) viewsMatch = html.match(/Views:\s*(\d+)/i)
+  if (!viewsMatch) viewsMatch = html.match(/>(\d+)\s*views?</i)
   if (viewsMatch) {
     data.views = parseInt(viewsMatch[1])
   }
 
-  // Extract score
-  const scoreMatch = html.match(/Score:\s*<\/strong>\s*([\d.]+)/i) ||
-                     html.match(/score["\s:]+?([\d.]+)/i)
+  // Extract score - try multiple patterns
+  let scoreMatch = html.match(/<strong>Score:\s*<\/strong>\s*([\d.]+)/i)
+  if (!scoreMatch) scoreMatch = html.match(/Score:\s*([\d.]+)/i)
+  if (!scoreMatch) scoreMatch = html.match(/"score"[^>]*>([\d.]+)/i)
   if (scoreMatch) {
     data.score = parseFloat(scoreMatch[1])
   }
 
-  // Extract likes and dislikes
-  const likesMatch = html.match(/(\d+)\s*like/i)
-  const dislikesMatch = html.match(/(\d+)\s*dislike/i)
+  // Extract likes and dislikes - try multiple patterns
+  let likesMatch = html.match(/(\d+)\s*likes?/i)
+  if (!likesMatch) likesMatch = html.match(/"cool"[^>]*>(\d+)/i)
   if (likesMatch) data.likes = parseInt(likesMatch[1])
+
+  let dislikesMatch = html.match(/(\d+)\s*dislikes?/i)
+  if (!dislikesMatch) dislikesMatch = html.match(/"notcool"[^>]*>(\d+)/i)
   if (dislikesMatch) data.dislikes = parseInt(dislikesMatch[1])
 
-  // Extract comments count
-  const commentsMatch = html.match(/(\d+)\s*comment/i) ||
-                        html.match(/Comments:\s*<\/strong>\s*(\d+)/i)
+  // Extract comments count - try multiple patterns
+  let commentsMatch = html.match(/<strong>Comments:\s*<\/strong>\s*(\d+)/i)
+  if (!commentsMatch) commentsMatch = html.match(/(\d+)\s*comments?/i)
+  if (!commentsMatch) commentsMatch = html.match(/comments[^>]*>(\d+)/i)
   if (commentsMatch) {
     data.comments = parseInt(commentsMatch[1])
   }
@@ -450,8 +481,8 @@ function getHTML() {
           </div>
         </div>
 
-        <a href="\${data.videoUrl}" target="_blank" class="video-link">
-          \${data.videoUrl}
+        <a href="\${data.pageUrl}" target="_blank" class="video-link">
+          \${data.pageUrl}
         </a>
 
         <button class="next-button" onclick="loadRandomVideo()">
