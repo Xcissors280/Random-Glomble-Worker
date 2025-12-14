@@ -95,7 +95,12 @@ function extractVideoData(html, videoId) {
   if (titleMatch) {
     data.title = titleMatch[1].replace(' - Glomble', '').replace('Glomble - ', '').trim()
   }
-  // Also try to extract from h1 or video title meta
+  // Try h5 tag (where Glomble actually puts the title)
+  if (!data.title) {
+    const h5Match = html.match(/<h5[^>]*>([^<]+)<\/h5>/i)
+    if (h5Match) data.title = h5Match[1].trim()
+  }
+  // Also try h1 as fallback
   if (!data.title) {
     const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
     if (h1Match) data.title = h1Match[1].trim()
@@ -197,9 +202,9 @@ function getHTML() {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #000;
       color: #fff;
-      min-height: 100vh;
+      height: 100vh;
       position: relative;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     .background-overlay {
@@ -217,7 +222,11 @@ function getHTML() {
     .container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 20px;
+      padding: 10px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .loading {
@@ -242,53 +251,61 @@ function getHTML() {
     }
 
     .video-title {
-      font-size: 32px;
+      font-size: 24px;
       font-weight: bold;
-      margin-bottom: 20px;
+      padding: 10px;
       text-align: center;
       color: #fff;
+      background: #000;
+      border: 2px solid #fff;
+      margin-bottom: 10px;
+      flex-shrink: 0;
     }
 
     .video-container {
       background: #000;
       border: 2px solid #fff;
       overflow: hidden;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+      height: 50vh;
     }
 
     video {
       width: 100%;
+      height: 100%;
       display: block;
-      max-height: 70vh;
       background: #000;
+      object-fit: contain;
     }
 
     .metadata {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      padding: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 5px;
+      padding: 5px;
       background: #000;
       border: 2px solid #fff;
-      margin-bottom: 20px;
+      margin-bottom: 5px;
+      flex-shrink: 0;
     }
 
     .metadata-item {
       background: #000;
-      padding: 15px;
+      padding: 5px;
       text-align: center;
       border: 2px solid #fff;
     }
 
     .metadata-label {
-      font-size: 12px;
+      font-size: 10px;
       color: #fff;
       text-transform: uppercase;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
     }
 
     .metadata-value {
-      font-size: 20px;
+      font-size: 16px;
       font-weight: bold;
       color: #fff;
     }
@@ -296,15 +313,16 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin-bottom: 20px;
-      padding: 15px;
+      margin-bottom: 5px;
+      padding: 8px;
       background: #000;
       border: 2px solid #fff;
       text-decoration: none;
       color: #fff;
-      font-size: 14px;
+      font-size: 12px;
       font-family: monospace;
       word-break: break-all;
+      flex-shrink: 0;
     }
 
     .video-link:hover {
@@ -315,15 +333,14 @@ function getHTML() {
     .next-button {
       display: block;
       width: 100%;
-      max-width: 400px;
-      margin: 30px auto;
-      padding: 20px;
-      font-size: 20px;
+      padding: 10px;
+      font-size: 16px;
       font-weight: bold;
       background: #000;
       color: #fff;
       border: 2px solid #fff;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     .next-button:hover {
@@ -429,7 +446,7 @@ function getHTML() {
           </div>
           <div class="metadata-item">
             <div class="metadata-label">Uploaded</div>
-            <div class="metadata-value" style="font-size: 14px;">\${data.uploadDate || 'Unknown'}</div>
+            <div class="metadata-value" style="font-size: 12px;">\${data.uploadDate || 'Unknown'}</div>
           </div>
         </div>
 
