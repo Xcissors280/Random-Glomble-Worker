@@ -301,9 +301,9 @@ function getHTML() {
       border: 2px solid #fff;
       border-top: none;
       overflow: hidden;
-      margin: 5px;
-      flex-shrink: 0;
-      height: 65vh;
+      margin: 10px;
+      flex: 1;
+      min-height: 0;
     }
 
     video {
@@ -316,21 +316,19 @@ function getHTML() {
 
     .metadata {
       display: flex;
-      justify-content: space-around;
+      justify-content: center;
       align-items: center;
-      padding: 10px 5px;
-      background: #000;
-      border: 2px solid #fff;
-      border-top: none;
-      margin: 5px;
+      padding: 0 10px 10px 10px;
+      background: transparent;
+      margin: 0;
       flex-shrink: 0;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .metadata-item {
       background: #000;
-      padding: 5px 10px;
+      padding: 6px 12px;
       text-align: center;
       border: 2px solid #fff;
     }
@@ -351,8 +349,8 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 5px;
-      padding: 8px;
+      margin: 0 10px 10px 10px;
+      padding: 10px;
       background: #000;
       border: 2px solid #fff;
       text-decoration: none;
@@ -370,8 +368,8 @@ function getHTML() {
 
     .next-button {
       display: block;
-      width: calc(100% - 10px);
-      margin: 5px;
+      width: calc(100% - 20px);
+      margin: 0 10px 10px 10px;
       padding: 12px;
       font-size: 16px;
       font-weight: bold;
