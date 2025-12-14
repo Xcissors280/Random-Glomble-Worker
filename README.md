@@ -50,7 +50,8 @@ The `_worker.js` file is automatically detected and deployed by Cloudflare Pages
 
 **Steps:**
 
-1. Install Wrangler globally:
+1. Clone this repository 
+2. Install dependencies:
    ```bash
    npm install -g wrangler
    ```
