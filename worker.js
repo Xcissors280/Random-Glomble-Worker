@@ -301,7 +301,7 @@ function getHTML() {
       border: 2px solid #fff;
       border-top: none;
       overflow: hidden;
-      margin: 10px;
+      margin: 0 10px 10px 10px;
       flex: 1;
       min-height: 0;
     }
@@ -316,14 +316,15 @@ function getHTML() {
 
     .metadata {
       display: flex;
-      justify-content: center;
+      justify-content: space-evenly;
       align-items: center;
-      padding: 0 10px 10px 10px;
+      padding: 10px;
       background: transparent;
       margin: 0;
       flex-shrink: 0;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
+      width: 100%;
     }
 
     .metadata-item {
@@ -331,6 +332,8 @@ function getHTML() {
       padding: 6px 12px;
       text-align: center;
       border: 2px solid #fff;
+      flex: 1 1 auto;
+      min-width: 80px;
     }
 
     .metadata-label {
