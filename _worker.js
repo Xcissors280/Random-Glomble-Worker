@@ -301,9 +301,9 @@ function getHTML() {
       border: 2px solid #fff;
       border-top: none;
       overflow: hidden;
-      margin: 0;
+      margin: 5px;
       flex-shrink: 0;
-      height: 50vh;
+      height: 65vh;
     }
 
     video {
@@ -315,29 +315,31 @@ function getHTML() {
     }
 
     .metadata {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-      gap: 2px;
-      padding: 2px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 5px;
       background: #000;
       border: 2px solid #fff;
       border-top: none;
-      margin: 0;
+      margin: 5px;
       flex-shrink: 0;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .metadata-item {
       background: #000;
-      padding: 3px;
+      padding: 5px 10px;
       text-align: center;
-      border: 1px solid #fff;
+      border: 2px solid #fff;
     }
 
     .metadata-label {
       font-size: 10px;
       color: #fff;
       text-transform: uppercase;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
 
     .metadata-value {
@@ -349,11 +351,10 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin: 0;
-      padding: 6px;
+      margin: 5px;
+      padding: 8px;
       background: #000;
       border: 2px solid #fff;
-      border-top: none;
       text-decoration: none;
       color: #fff;
       font-size: 11px;
@@ -369,15 +370,14 @@ function getHTML() {
 
     .next-button {
       display: block;
-      width: 100%;
-      padding: 8px;
+      width: calc(100% - 10px);
+      margin: 5px;
+      padding: 12px;
       font-size: 16px;
       font-weight: bold;
       background: #000;
       color: #fff;
       border: 2px solid #fff;
-      border-top: none;
-      border-bottom: none;
       cursor: pointer;
       flex-shrink: 0;
     }
@@ -417,9 +417,6 @@ function getHTML() {
     let currentVideoElement = null;
 
     async function loadRandomVideo() {
-      const content = document.getElementById('content');
-      content.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading random video...</div></div>';
-
       try {
         const response = await fetch('/api/random');
         const data = await response.json();
@@ -430,6 +427,7 @@ function getHTML() {
 
         displayVideo(data);
       } catch (error) {
+        const content = document.getElementById('content');
         content.innerHTML = \`
           <div class="error">
             <h2>Error Loading Video</h2>
