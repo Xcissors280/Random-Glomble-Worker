@@ -1,0 +1,22 @@
+{
+  "name": "random-glomble-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker that scrapes and plays random videos from Glomble.com",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "glomble",
+    "video",
+    "scraper"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
