@@ -4,8 +4,7 @@
   "description": "Cloudflare Worker that scrapes and plays random videos from Glomble.com",
   "main": "worker.js",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "build": "echo 'No build needed - using service worker format'"
   },
   "keywords": [
     "cloudflare",
@@ -15,8 +14,5 @@
     "scraper"
   ],
   "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "wrangler": "^3.0.0"
-  }
+  "license": "MIT"
 }
