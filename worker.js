@@ -298,7 +298,7 @@ function getHTML() {
       background: #000;
       border: 2px solid #fff;
       border-top: none;
-      margin: 0;
+      margin: 0 10px;
     }
 
     .video-container {
