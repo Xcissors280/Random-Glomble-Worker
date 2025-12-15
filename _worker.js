@@ -65,9 +65,18 @@ function extractVideoIds(html) {
   const regex = /\/videos\/([a-zA-Z0-9_-]+)/g
   let match
 
+  // Common non-video IDs to filter out
+  const blacklist = ['favico', 'favicon', 'home', 'main', 'styles', 'style', 'script', 'scripts', 'index', 'about', 'contact', 'login', 'register', 'search', 'upload', 'settings', 'profile', 'profiles']
+
   while ((match = regex.exec(html)) !== null) {
-    if (!videoIds.includes(match[1])) {
-      videoIds.push(match[1])
+    const id = match[1]
+    // Only add if not in blacklist and has proper video ID format (12 characters, mixed case)
+    if (!videoIds.includes(id) &&
+        !blacklist.includes(id.toLowerCase()) &&
+        id.length >= 10 &&
+        /[A-Z]/.test(id) &&
+        /[a-z]/.test(id)) {
+      videoIds.push(id)
     }
   }
 
@@ -84,50 +93,120 @@ function extractVideoData(html, videoId) {
     dislikes: 0,
     comments: 0,
     uploadDate: '',
-    videoUrl: `https://media.glomble.com/uploads/videos/${videoId}.mp4`,
+    videoUrl: `https://media.glomble.com/uploads/video_files/${videoId}.mp4`,
     thumbnailUrl: `https://media.glomble.com/uploads/thumbnails/${videoId}.png`,
     bannerUrl: '',
     pageUrl: `https://glomble.com/videos/${videoId}`
   }
 
-  // Extract title
-  const titleMatch = html.match(/<title>([^<]+)<\/title>/)
+  // Extract title - try multiple methods
+  let titleMatch = html.match(/<title>([^<]+)<\/title>/)
   if (titleMatch) {
-    data.title = titleMatch[1].replace(' - Glomble', '').trim()
+    const title = titleMatch[1].replace(' - Glomble', '').replace('Glomble - ', '').trim()
+    if (title && title !== 'Glomble') {
+      data.title = title
+    }
+  }
+  // Try h5 tag (where Glomble actually puts the title) - try multiple times
+  if (!data.title) {
+    const h5Matches = html.match(/<h5[^>]*>([^<]+)<\/h5>/gi)
+    if (h5Matches && h5Matches.length > 0) {
+      // Get the first h5 match and extract text
+      const h5Match = h5Matches[0].match(/<h5[^>]*>([^<]+)<\/h5>/i)
+      if (h5Match) data.title = h5Match[1].trim()
+    }
+  }
+  // Try h1 as fallback
+  if (!data.title) {
+    const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
+    if (h1Match) data.title = h1Match[1].trim()
+  }
+  // Try h2 as last resort
+  if (!data.title) {
+    const h2Match = html.match(/<h2[^>]*>([^<]+)<\/h2>/i)
+    if (h2Match) data.title = h2Match[1].trim()
+  }
+  // If still no title, use video ID
+  if (!data.title) {
+    data.title = `Video ${videoId}`
   }
 
-  // Extract views
-  const viewsMatch = html.match(/Views:\s*<\/strong>\s*(\d+)/i) ||
-                     html.match(/(\d+)\s*views?/i)
+  // Extract views - look for view-count span
+  let viewsMatch = html.match(/<span class="view-count"[^>]*>(\d+)<\/span>/i)
+  if (!viewsMatch) viewsMatch = html.match(/Views:\s*<span[^>]*>(\d+)<\/span>/i)
+  if (!viewsMatch) viewsMatch = html.match(/Views:\s*(\d+)/i)
   if (viewsMatch) {
     data.views = parseInt(viewsMatch[1])
   }
 
-  // Extract score
-  const scoreMatch = html.match(/Score:\s*<\/strong>\s*([\d.]+)/i) ||
-                     html.match(/score["\s:]+?([\d.]+)/i)
+  // Extract score - look for score span
+  let scoreMatch = html.match(/<span id="score">([^<]+)<\/span>/i)
+  if (!scoreMatch) scoreMatch = html.match(/Score:\s*<span[^>]*>([\d.]+)<\/span>/i)
+  if (!scoreMatch) scoreMatch = html.match(/Score:\s*([\d.]+)/i)
   if (scoreMatch) {
     data.score = parseFloat(scoreMatch[1])
   }
 
-  // Extract likes and dislikes
-  const likesMatch = html.match(/(\d+)\s*like/i)
-  const dislikesMatch = html.match(/(\d+)\s*dislike/i)
+  // Extract likes - look for bx-like with span (confusingly named dislike-count)
+  let likesMatch = html.match(/bx-like[^>]*><span class="dislike-count">(\d+)<\/span>/i)
+  if (!likesMatch) likesMatch = html.match(/bx-like[^>]*><span>(\d+)<\/span>/i)
+  if (!likesMatch) likesMatch = html.match(/(\d+)\s*likes?/i)
   if (likesMatch) data.likes = parseInt(likesMatch[1])
+
+  // Extract dislikes - look for bx-dislike with span
+  let dislikesMatch = html.match(/bx-dislike[^>]*><span>(\d+)<\/span>/i)
+  if (!dislikesMatch) dislikesMatch = html.match(/(\d+)\s*dislikes?/i)
   if (dislikesMatch) data.dislikes = parseInt(dislikesMatch[1])
 
-  // Extract comments count
-  const commentsMatch = html.match(/(\d+)\s*comment/i) ||
-                        html.match(/Comments:\s*<\/strong>\s*(\d+)/i)
+  // Extract comments count - count comment sections or look for comment text
+  let commentsMatch = html.match(/class="comment-section"/g)
   if (commentsMatch) {
-    data.comments = parseInt(commentsMatch[1])
+    data.comments = commentsMatch.length
+  } else {
+    commentsMatch = html.match(/(\d+)\s*comments?/i)
+    if (commentsMatch) data.comments = parseInt(commentsMatch[1])
   }
 
-  // Extract upload date
-  const dateMatch = html.match(/(\d+\s+(?:second|minute|hour|day|week|month|year)s?,\s*\d+\s+(?:second|minute|hour|day|week|month|year)s?\s+ago)/i) ||
-                    html.match(/(\d+\s+(?:second|minute|hour|day|week|month|year)s?\s+ago)/i)
+  // Extract upload date and convert to actual date
+  const dateMatch = html.match(/(\d+)\s+(second|minute|hour|day|week|month|year)s?(?:,\s*(\d+)\s+(second|minute|hour|day|week|month|year)s?)?\s+ago/i)
   if (dateMatch) {
-    data.uploadDate = dateMatch[1]
+    const value1 = parseInt(dateMatch[1])
+    const unit1 = dateMatch[2].toLowerCase()
+    const value2 = dateMatch[3] ? parseInt(dateMatch[3]) : 0
+    const unit2 = dateMatch[4] ? dateMatch[4].toLowerCase() : ''
+
+    const now = new Date()
+    let uploadDate = new Date(now)
+
+    // Subtract time units
+    const subtractTime = (val, unit) => {
+      switch(unit) {
+        case 'second': return val * 1000
+        case 'minute': return val * 60 * 1000
+        case 'hour': return val * 60 * 60 * 1000
+        case 'day': return val * 24 * 60 * 60 * 1000
+        case 'week': return val * 7 * 24 * 60 * 60 * 1000
+        case 'month': return val * 30 * 24 * 60 * 60 * 1000
+        case 'year': return val * 365 * 24 * 60 * 60 * 1000
+        default: return 0
+      }
+    }
+
+    uploadDate = new Date(now.getTime() - subtractTime(value1, unit1) - subtractTime(value2, unit2))
+
+    // Check if it's today
+    const isToday = uploadDate.toDateString() === now.toDateString()
+
+    if (isToday) {
+      const hours = uploadDate.getHours().toString().padStart(2, '0')
+      const minutes = uploadDate.getMinutes().toString().padStart(2, '0')
+      data.uploadDate = `${hours}:${minutes}`
+    } else {
+      const month = (uploadDate.getMonth() + 1).toString().padStart(2, '0')
+      const day = uploadDate.getDate().toString().padStart(2, '0')
+      const year = uploadDate.getFullYear()
+      data.uploadDate = `${month}/${day}/${year}`
+    }
   }
 
   // Extract banner URL
@@ -155,11 +234,11 @@ function getHTML() {
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0a0a0a;
+      background: #000;
       color: #fff;
-      min-height: 100vh;
+      height: 100vh;
       position: relative;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     .background-overlay {
@@ -170,15 +249,17 @@ function getHTML() {
       height: 100%;
       background-size: cover;
       background-position: center;
-      filter: blur(20px) brightness(0.3);
       z-index: -1;
-      transition: background-image 0.5s ease;
     }
 
     .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     .loading {
@@ -203,55 +284,67 @@ function getHTML() {
     }
 
     .video-title {
-      font-size: 32px;
+      font-size: 20px;
       font-weight: bold;
-      margin-bottom: 20px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      padding: 8px 10px;
       text-align: center;
+      color: #fff;
+      background: #000;
+      border: 2px solid #fff;
+      border-top: none;
+      margin: 0;
+      flex-shrink: 0;
     }
 
     .video-container {
-      background: rgba(0,0,0,0.7);
-      border-radius: 12px;
+      background: #000;
+      border: 2px solid #fff;
+      border-top: none;
       overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-      margin-bottom: 20px;
+      margin: 0 10px 5px 10px;
+      height: 60vh;
+      flex-shrink: 0;
     }
 
     video {
       width: 100%;
+      height: 100%;
       display: block;
-      max-height: 70vh;
       background: #000;
+      object-fit: contain;
     }
 
     .metadata {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      padding: 20px;
-      background: rgba(0,0,0,0.6);
-      border-radius: 8px;
-      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-evenly;
+      align-items: center;
+      padding: 5px 10px;
+      background: transparent;
+      margin: 0;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+      gap: 5px;
+      width: 100%;
     }
 
     .metadata-item {
-      background: rgba(255,255,255,0.05);
-      padding: 15px;
-      border-radius: 6px;
+      background: #000;
+      padding: 4px 8px;
       text-align: center;
-      border: 1px solid rgba(255,255,255,0.1);
+      border: 2px solid #fff;
+      flex: 1 1 auto;
+      min-width: 70px;
     }
 
     .metadata-label {
-      font-size: 12px;
-      color: #888;
+      font-size: 9px;
+      color: #fff;
       text-transform: uppercase;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
     }
 
     .metadata-value {
-      font-size: 20px;
+      font-size: 14px;
       font-weight: bold;
       color: #fff;
     }
@@ -259,53 +352,53 @@ function getHTML() {
     .video-link {
       display: block;
       text-align: center;
-      margin-bottom: 20px;
-      padding: 15px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
+      margin: 0 10px 5px 10px;
+      padding: 6px;
+      background: #000;
+      border: 2px solid #fff;
       text-decoration: none;
-      color: #4da6ff;
-      font-size: 16px;
-      transition: background 0.3s;
+      color: #fff;
+      font-size: 14px;
+      font-family: monospace;
+      word-break: break-all;
+      flex-shrink: 0;
     }
 
     .video-link:hover {
-      background: rgba(255,255,255,0.1);
+      background: #fff;
+      color: #000;
     }
 
     .next-button {
       display: block;
-      width: 100%;
-      max-width: 400px;
-      margin: 30px auto;
-      padding: 20px;
-      font-size: 20px;
+      width: calc(100% - 20px);
+      margin: 0 10px 5px 10px;
+      padding: 8px;
+      font-size: 15px;
       font-weight: bold;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 50px;
+      background: #000;
+      color: #fff;
+      border: 2px solid #fff;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      flex-shrink: 0;
     }
 
     .next-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(102, 126, 234, 0.6);
+      background: #fff;
+      color: #000;
     }
 
     .next-button:active {
-      transform: translateY(0);
+      transform: scale(0.98);
     }
 
     .error {
-      background: rgba(255,0,0,0.2);
-      border: 1px solid #ff0000;
+      background: #000;
+      border: 2px solid #fff;
       padding: 20px;
-      border-radius: 8px;
       text-align: center;
       margin: 20px 0;
+      color: #fff;
     }
   </style>
 </head>
@@ -325,9 +418,6 @@ function getHTML() {
     let currentVideoElement = null;
 
     async function loadRandomVideo() {
-      const content = document.getElementById('content');
-      content.innerHTML = '<div class="loading"><div class="spinner"></div><div>Loading random video...</div></div>';
-
       try {
         const response = await fetch('/api/random');
         const data = await response.json();
@@ -338,6 +428,7 @@ function getHTML() {
 
         displayVideo(data);
       } catch (error) {
+        const content = document.getElementById('content');
         content.innerHTML = \`
           <div class="error">
             <h2>Error Loading Video</h2>
@@ -393,25 +484,23 @@ function getHTML() {
           </div>
           <div class="metadata-item">
             <div class="metadata-label">Uploaded</div>
-            <div class="metadata-value" style="font-size: 14px;">\${data.uploadDate || 'Unknown'}</div>
+            <div class="metadata-value">\${data.uploadDate || 'Unknown'}</div>
           </div>
         </div>
 
         <a href="\${data.pageUrl}" target="_blank" class="video-link">
-          🔗 Watch on Glomble.com
+          \${data.pageUrl}
         </a>
 
         <button class="next-button" onclick="loadRandomVideo()">
-          🎲 Get Another Random Video
+          Get Another Random Video
         </button>
       \`;
 
       // Set up auto-play next video when current ends
       currentVideoElement = document.getElementById('videoPlayer');
       currentVideoElement.addEventListener('ended', () => {
-        setTimeout(() => {
-          loadRandomVideo();
-        }, 1000); // Wait 1 second before loading next video
+        loadRandomVideo(); // Load immediately
       });
     }
 
