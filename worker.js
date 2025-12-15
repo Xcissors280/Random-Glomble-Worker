@@ -286,7 +286,7 @@ function getHTML() {
     .video-title {
       font-size: 20px;
       font-weight: bold;
-      padding: 8px 10px;
+      padding: 10px;
       text-align: center;
       color: #fff;
       background: #000;
@@ -302,8 +302,8 @@ function getHTML() {
       border-top: none;
       overflow: hidden;
       margin: 0 10px 5px 10px;
-      height: 60vh;
-      flex-shrink: 0;
+      flex: 1;
+      min-height: 0;
     }
 
     video {
@@ -329,15 +329,18 @@ function getHTML() {
 
     .metadata-item {
       background: #000;
-      padding: 4px 8px;
+      padding: 6px 8px;
       text-align: center;
       border: 2px solid #fff;
-      flex: 1 1 auto;
-      min-width: 70px;
+      flex: 1 1 0;
+      min-width: 75px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .metadata-label {
-      font-size: 9px;
+      font-size: 10px;
       color: #fff;
       text-transform: uppercase;
       margin-bottom: 2px;
